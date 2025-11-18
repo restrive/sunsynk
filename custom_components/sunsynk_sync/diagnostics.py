@@ -42,11 +42,15 @@ async def async_get_config_entry_diagnostics(
     """Return diagnostics for a config entry."""
     coordinator = hass.data[DOMAIN].get(entry.entry_id)
     data = coordinator.data if coordinator else {}
+    meta = {}
+    if coordinator:
+        meta = {
+            "last_update_success": getattr(coordinator, "last_update_success", False),
+            "last_success_at": getattr(coordinator, "last_success_at", None),
+            "last_error": getattr(coordinator, "last_error", None),
+        }
     payload = {
         "config": entry.as_dict(),
-        "coordinator": {
-            "last_update_success": getattr(coordinator, "last_update_success", False),
-            "data": data,
-        },
+        "coordinator": {"meta": meta, "data": data},
     }
     return async_redact_data(payload, REDACT_KEYS)

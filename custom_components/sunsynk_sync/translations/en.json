@@ -8,8 +8,8 @@
         "data": {
           "email": "Email",
           "password": "Password",
-          "plant_id": "Plant ID (example: 221135)",
-          "inverter_sn": "Inverter Serial (example: 2302100572)",
+          "plant_id": "Plant ID (example: 221100)",
+          "inverter_sn": "Inverter Serial (example: 2312010203)",
           "lan": "Language (example: en)",
           "poll_interval": "Refresh interval in seconds (example: 30)",
           "include_weather": "Create weather sensors",

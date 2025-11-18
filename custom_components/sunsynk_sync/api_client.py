@@ -11,9 +11,10 @@ import time
 from typing import Any, Dict, Optional
 
 try:  # pragma: no cover - fallback for test environments without aiohttp
-    from aiohttp import ClientSession
+    from aiohttp import ClientSession, ClientError
 except ImportError:  # pragma: no cover
     ClientSession = Any  # type: ignore[misc, assignment]
+    ClientError = Exception
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.PublicKey import RSA
 
@@ -137,25 +138,42 @@ class SunsynkApiClient:
         require_success: bool = True,
     ) -> dict[str, Any]:
         url = f"{self._base_url}{path}"
-        async with self._session.request(
+        _LOGGER.debug(
+            "Sunsynk API request: %s %s (params=%s)",
             method,
-            url,
-            params=params,
-            json=json_body,
-            headers=headers,
-            timeout=30,
-        ) as response:
-            payload = await self._parse_json(response)
+            path,
+            params if params else "{}",
+        )
+        try:
+            async with self._session.request(
+                method,
+                url,
+                params=params,
+                json=json_body,
+                headers=headers,
+                timeout=30,
+            ) as response:
+                payload = await self._parse_json(response)
+        except ClientError as exc:
+            _LOGGER.error("HTTP error calling %s %s: %s", method, path, exc)
+            raise SunsynkApiError(f"Network error calling {path}") from exc
 
         if not require_success:
             return payload
 
         if response.status != 200:
+            _LOGGER.error("HTTP %s calling %s: %s", response.status, path, payload)
             raise SunsynkApiError(
                 f"HTTP {response.status} calling {path}", status=response.status, payload=payload
             )
 
         if payload.get("code") != 0:
+            _LOGGER.warning(
+                "Sunsynk API returned code %s for %s: %s",
+                payload.get("code"),
+                path,
+                payload.get("msg"),
+            )
             raise SunsynkApiError(
                 payload.get("msg", "Unknown Sunsynk error"),
                 status=response.status,
@@ -177,7 +195,11 @@ class SunsynkApiClient:
             await self._authenticate()
 
     async def _authenticate(self) -> None:
-        _LOGGER.debug("Authenticating with Sunsynk API")
+        _LOGGER.info(
+            "Authenticating Sunsynk user %s for plant %s",
+            _mask_email(self._email),
+            self._plant_id,
+        )
         public_key = await self._fetch_public_key()
         encrypted_password = self._encrypt_password(public_key)
         payload = {
@@ -216,3 +238,11 @@ class SunsynkApiClient:
         cipher = PKCS1_v1_5.new(rsa_key)
         encrypted = cipher.encrypt(self._password.encode("utf-8"))
         return base64.b64encode(encrypted).decode("ascii")
+
+
+def _mask_email(email: str) -> str:
+    """Return masked email for logging."""
+    if "@" not in email:
+        return "***"
+    name, domain = email.split("@", 1)
+    return f"{name[:1]}***@{domain}"

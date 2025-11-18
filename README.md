@@ -28,6 +28,14 @@
 - API exploration harness: ../api-explore
 - Follow Task Builder plan (experts/task-builder/tasks/sunsynk-hacs-build-plan.20251118.v0.1.md)
 
+## Debugging & Logging
+- Each module uses `logging.getLogger(__name__)`; enabling debug level for `custom_components.sunsynk_sync` surfaces:
+  - Auth lifecycle (masked email + plant ID).
+  - Each REST request (`method endpoint params`).
+  - Coordinator refresh start/end plus weather fetch status.
+- Errors capture Sunsynk API messages and store `coordinator.last_error` for diagnostics export.
+- Diagnostics (`Settings → System → Repairs → Download Diagnostics`) now include `last_success_at` timestamps and the current coordinator payload (with sensitive fields redacted).
+
 ## Security Notes
 - Never commit real credentials or plant metadata.
 - Use HA secrets for storing email/password.

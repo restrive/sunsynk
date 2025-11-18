@@ -52,9 +52,12 @@ class SunsynkCoordinator(DataUpdateCoordinator):  # type: ignore[misc]
         self._client = client
         self._include_weather = include_weather
         self._weather_lon_lat = weather_lon_lat
+        self.last_success_at: Optional[float] = None
+        self.last_error: Optional[str] = None
 
     async def _async_update_data(self) -> Dict[str, Any]:
         try:
+            _LOGGER.debug("Refreshing Sunsynk data (weather=%s)", self._include_weather)
             flow_task = self._client.async_get_flow()
             input_task = self._client.async_get_inverter_realtime("input")
             output_task = self._client.async_get_inverter_realtime("output")
@@ -114,9 +117,15 @@ class SunsynkCoordinator(DataUpdateCoordinator):  # type: ignore[misc]
                 if isinstance(value, Exception):
                     raise value
 
+            self.last_success_at = asyncio.get_event_loop().time()
+            self.last_error = None
             return data  # type: ignore[return-value]
 
         except SunsynkApiError as err:
+            self.last_error = str(err)
+            _LOGGER.error("Coordinator update failed: %s", err)
             raise UpdateFailed(f"Sunsynk API error: {err}") from err
         except Exception as err:  # pragma: no cover - safety net
+            self.last_error = str(err)
+            _LOGGER.exception("Unexpected error updating Sunsynk data")
             raise UpdateFailed(f"Unexpected error: {err}") from err
