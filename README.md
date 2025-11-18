@@ -1,7 +1,7 @@
 # Sunsynk Sync (HACS Scaffold)
 
 ## Status
-- Version: 0.0.1 (skeleton)
+- Version: 0.1.0 (preview)
 - Purpose: Surface Sunsynk inverter + plant metrics inside Home Assistant using the new portal APIs.
 
 > **Disclaimer:** This integration is provided "as is" without warranties of any kind. Use at your own risk; the maintainers are not liable for damages, data loss, or regulatory issues that may arise from installing or operating this code.
@@ -36,6 +36,7 @@
 - Errors capture Sunsynk API messages and store `coordinator.last_error` for diagnostics export.
 - Partial failures are tolerated: data["route_errors"] lists per-endpoint failures so other sensors keep updating while diagnostics show the issue.
 - Diagnostics (`Settings → System → Repairs → Download Diagnostics`) now include `last_success_at` timestamps and the current coordinator payload (with sensitive fields redacted).
+
 ## PV Array Sensors
 - `/api/v1/inverter/{sn}/realtime/input` responses often expose multiple `pvIV` strings; the integration now auto-creates `PV Array {n} Power` sensors for each string.
 - Each sensor reports instantaneous power (W) and includes voltage/current attributes, giving immediate visibility into misbehaving arrays.
