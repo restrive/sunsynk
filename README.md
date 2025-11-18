@@ -36,6 +36,11 @@
 - Errors capture Sunsynk API messages and store `coordinator.last_error` for diagnostics export.
 - Partial failures are tolerated: data["route_errors"] lists per-endpoint failures so other sensors keep updating while diagnostics show the issue.
 - Diagnostics (`Settings → System → Repairs → Download Diagnostics`) now include `last_success_at` timestamps and the current coordinator payload (with sensitive fields redacted).
+## PV Array Sensors
+- `/api/v1/inverter/{sn}/realtime/input` responses often expose multiple `pvIV` strings; the integration now auto-creates `PV Array {n} Power` sensors for each string.
+- Each sensor reports instantaneous power (W) and includes voltage/current attributes, giving immediate visibility into misbehaving arrays.
+- Sensors are discovered dynamically after each coordinator refresh, so wiring up a new string in Sunsynk automatically surfaces a matching entity without reloading the integration.
+
 
 ## Security Notes
 - Never commit real credentials or plant metadata.
