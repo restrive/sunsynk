@@ -1,7 +1,6 @@
 {
   "domain": "sunsynk_sync",
   "name": "Sunsynk Sync",
-  "name": "Sunsynk Sync",
   "codeowners": [
     "@restrive"
   ],
