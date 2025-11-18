@@ -3,12 +3,17 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from custom_components.sunsynk_sync.api_client import SunsynkApiClient  # noqa: E402
-from custom_components.sunsynk_sync.coordinator import SunsynkCoordinator  # noqa: E402
+from custom_components.sunsynk_sync.coordinator import (  # noqa: E402
+    SunsynkCoordinator,
+    UpdateFailed,
+)
 
 
 class FixtureClient(SunsynkApiClient):
@@ -72,3 +77,65 @@ def test_coordinator_collects_all_payloads():
     assert data["battery"]["soc"] == "27.0"
     assert data["plant_realtime"]["pac"] == 1400
     assert data["weather"]["currWea"]["desc"] == "mist"
+
+
+class PartialFailureClient(FixtureClient):
+    async def async_get_inverter_realtime(self, category: str):
+        if category == "battery":
+            raise RuntimeError("battery permission error")
+        return await super().async_get_inverter_realtime(category)
+
+
+async def _run_partial_coordinator():
+    fixture_dir = Path(__file__).resolve().parent / "fixtures"
+    client = PartialFailureClient(fixture_dir)
+    coordinator = SunsynkCoordinator(
+        hass=None,  # type: ignore[arg-type]
+        client=client,
+        poll_interval=30,
+        include_weather=False,
+    )
+    return await coordinator._async_update_data()
+
+
+def test_coordinator_returns_partial_data_and_errors():
+    data = asyncio.run(_run_partial_coordinator())
+    assert data["plant_realtime"]["pac"] == 1400
+    assert data["battery"] == {}
+    assert "route_errors" in data
+    assert "battery" in data["route_errors"]
+
+
+class AllFailClient:
+    async def async_get_flow(self):
+        raise RuntimeError("flow boom")
+
+    async def async_get_inverter_realtime(self, category: str):
+        raise RuntimeError(f"{category} boom")
+
+    async def async_get_plant_realtime(self):
+        raise RuntimeError("plant boom")
+
+    async def async_get_plant_summary(self):
+        raise RuntimeError("summary boom")
+
+    async def async_get_message_count(self):
+        raise RuntimeError("msg boom")
+
+    async def async_get_inverter_counts(self):
+        raise RuntimeError("count boom")
+
+    async def async_get_generation_use(self):
+        raise RuntimeError("gen boom")
+
+
+def test_coordinator_raises_when_all_routes_fail():
+    client = AllFailClient()
+    coordinator = SunsynkCoordinator(
+        hass=None,  # type: ignore[arg-type]
+        client=client,  # type: ignore[arg-type]
+        poll_interval=30,
+        include_weather=False,
+    )
+    with pytest.raises(UpdateFailed):
+        asyncio.run(coordinator._async_update_data())

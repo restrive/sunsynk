@@ -132,6 +132,48 @@ def test_flow_request_performs_authentication(monkeypatch) -> None:
     assert ("GET", "/api/v1/inverter/SN123/flow") in session.calls
 
 
+def test_inverter_realtime_uses_legacy_routes(monkeypatch) -> None:
+    public_b64, _ = _build_public_key()
+    responses = {
+        ("GET", "/anonymous/publicKey"): ResponsePayload(
+            200,
+            {"code": 0, "msg": "Success", "data": public_b64},
+        ),
+        ("POST", "/oauth/token/new"): ResponsePayload(
+            200,
+            {
+                "code": 0,
+                "msg": "Success",
+                "data": {"access_token": "token-value", "expires_in": 60},
+            },
+        ),
+        ("GET", "/api/v1/inverter/battery/SN123/realtime"): ResponsePayload(
+            200,
+            {
+                "code": 0,
+                "msg": "Success",
+                "data": {"soc": "75", "power": 123},
+            },
+        ),
+    }
+    session = FakeSession(responses)
+    client = SunsynkApiClient(
+        session,
+        email="user@example.com",
+        password="secret",
+        plant_id="PID",
+        inverter_sn="SN123",
+    )
+
+    async def run() -> Dict[str, Any]:
+        monkeypatch.setattr(client, "_encrypt_password", lambda _: "encrypted")
+        return await client.async_get_inverter_realtime("battery")
+
+    data = asyncio.run(run())
+    assert data["soc"] == "75"
+    assert ("GET", "/api/v1/inverter/battery/SN123/realtime") in session.calls
+
+
 def test_permission_error_contains_context(monkeypatch) -> None:
     public_b64, _ = _build_public_key()
     responses = {

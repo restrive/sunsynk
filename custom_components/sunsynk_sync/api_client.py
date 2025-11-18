@@ -34,6 +34,21 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+LEGACY_REALTIME_ENDPOINTS: dict[str, dict[str, Any]] = {
+    "battery": {
+        "path": "/api/v1/inverter/battery/{sn}/realtime",
+        "params": {"sn": "{sn}", "lan": "{lan}"},
+    },
+    "grid": {
+        "path": "/api/v1/inverter/grid/{sn}/realtime",
+        "params": {"sn": "{sn}"},
+    },
+    "load": {
+        "path": "/api/v1/inverter/load/{sn}/realtime",
+        "params": {},
+    },
+}
+
 
 class SunsynkApiError(RuntimeError):
     """Raised when Sunsynk API returns an error response."""
@@ -88,6 +103,17 @@ class SunsynkApiClient:
         )
 
     async def async_get_inverter_realtime(self, category: str) -> dict[str, Any]:
+        override = LEGACY_REALTIME_ENDPOINTS.get(category)
+        if override:
+            path = override["path"].format(sn=self._inverter_sn)
+            params = self._format_params(override.get("params"))
+            _LOGGER.debug(
+                "Using legacy realtime endpoint for category '%s': %s",
+                category,
+                override["path"],
+            )
+            return await self._authenticated_get(path, params=params)
+
         return await self._authenticated_get(
             REALTIME_ENDPOINT.format(sn=self._inverter_sn, category=category)
         )
@@ -244,6 +270,21 @@ class SunsynkApiClient:
         cipher = PKCS1_v1_5.new(rsa_key)
         encrypted = cipher.encrypt(self._password.encode("utf-8"))
         return base64.b64encode(encrypted).decode("ascii")
+
+    def _format_params(
+        self, params: Optional[dict[str, str]]
+    ) -> Optional[dict[str, str]]:
+        if not params:
+            return None
+        context = {
+            "sn": self._inverter_sn,
+            "lan": self._lan,
+            "plant_id": self._plant_id,
+        }
+        rendered: dict[str, str] = {}
+        for key, value in params.items():
+            rendered[key] = value.format(**context)
+        return rendered
 
 
 def _mask_email(email: str) -> str:

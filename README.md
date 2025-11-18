@@ -34,6 +34,7 @@
   - Each REST request (`method endpoint params`).
   - Coordinator refresh start/end plus weather fetch status.
 - Errors capture Sunsynk API messages and store `coordinator.last_error` for diagnostics export.
+- Partial failures are tolerated: data["route_errors"] lists per-endpoint failures so other sensors keep updating while diagnostics show the issue.
 - Diagnostics (`Settings → System → Repairs → Download Diagnostics`) now include `last_success_at` timestamps and the current coordinator payload (with sensitive fields redacted).
 
 ## Security Notes

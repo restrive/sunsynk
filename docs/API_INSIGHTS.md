@@ -6,7 +6,7 @@
 
 - **Core resources**
   - `/api/v1/plant/{plant_id}` + `/realtime`/`/layout/day`/`/logical/layout/day` provide plant-level summaries. Current data set shows `plant_id=221135` valid.
-  - `/api/v1/inverter/{sn}/realtime/input|output|grid|battery|load` surface PV input, AC output, grid import/export, SOC/voltage/current, and load demand in near real time.
+  - `/api/v1/inverter/{sn}/realtime/input|output` surface PV input and AC output, but `/realtime/{battery|load|grid}` now throw `code=2` permission errors for integrator accounts. Use `/api/v1/inverter/{category}/{sn}/realtime` (e.g., `/inverter/battery/{sn}/realtime`) to fetch those metrics until Sunsynk enables the new routes.
   - `/api/v1/inverter/{sn}/flow` aggregates PV/Battery/Grid→Load flow values (`pvPower`, `battPower`, `gridOrMeterPower`, `loadOrEpsPower`, `soc`, etc.)—perfect for a single coordinator call feeding multiple sensors.
   - `/api/v1/inverter/{sn}/day|month` endpoints provide historical series by column (e.g., `ppv`, `pac`, `p_bms`).
   - `/api/v1/message/count` + `/api/v1/message/getLastUnReadNotice` allow notification sensors.
@@ -25,4 +25,3 @@
   - Maintain redaction of access tokens/credentials—no comments or config files should contain actual email/password.
 
 Map these insights into comments/TODOs across the skeleton files so future implementation can latch onto the right routes quickly.
-

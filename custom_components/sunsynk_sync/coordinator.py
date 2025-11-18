@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 try:  # pragma: no cover - allow running tests without Home Assistant
     from homeassistant.core import HomeAssistant
@@ -29,6 +29,7 @@ from .api_client import SunsynkApiClient, SunsynkApiError
 from .const import DEFAULT_POLL_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
+SCALAR_ROUTE_KEYS = {"message_count"}
 
 
 class SunsynkCoordinator(DataUpdateCoordinator):  # type: ignore[misc]
@@ -58,67 +59,58 @@ class SunsynkCoordinator(DataUpdateCoordinator):  # type: ignore[misc]
     async def _async_update_data(self) -> Dict[str, Any]:
         try:
             _LOGGER.debug("Refreshing Sunsynk data (weather=%s)", self._include_weather)
-            flow_task = self._client.async_get_flow()
-            input_task = self._client.async_get_inverter_realtime("input")
-            output_task = self._client.async_get_inverter_realtime("output")
-            grid_task = self._client.async_get_inverter_realtime("grid")
-            battery_task = self._client.async_get_inverter_realtime("battery")
-            load_task = self._client.async_get_inverter_realtime("load")
-            plant_rt_task = self._client.async_get_plant_realtime()
-            plant_summary_task = self._client.async_get_plant_summary()
-            message_task = self._client.async_get_message_count()
-            inverter_counts_task = self._client.async_get_inverter_counts()
-            gen_use_task = self._client.async_get_generation_use()
-
-            tasks = [
-                flow_task,
-                input_task,
-                output_task,
-                grid_task,
-                battery_task,
-                load_task,
-                plant_rt_task,
-                plant_summary_task,
-                message_task,
-                inverter_counts_task,
-                gen_use_task,
+            task_defs: list[Tuple[str, bool, Any]] = [
+                ("flow", False, self._client.async_get_flow()),
+                ("pv_input", False, self._client.async_get_inverter_realtime("input")),
+                ("ac_output", False, self._client.async_get_inverter_realtime("output")),
+                ("grid", False, self._client.async_get_inverter_realtime("grid")),
+                ("battery", False, self._client.async_get_inverter_realtime("battery")),
+                ("load", False, self._client.async_get_inverter_realtime("load")),
+                ("plant_realtime", False, self._client.async_get_plant_realtime()),
+                ("plant_summary", False, self._client.async_get_plant_summary()),
+                ("message_count", False, self._client.async_get_message_count()),
+                ("inverter_counts", False, self._client.async_get_inverter_counts()),
+                ("generation_use", False, self._client.async_get_generation_use()),
             ]
 
             if self._include_weather and self._weather_lon_lat:
-                weather_task = self._client.async_get_weather(self._weather_lon_lat)
-                tasks.append(weather_task)
+                task_defs.append(
+                    ("weather", True, self._client.async_get_weather(self._weather_lon_lat))
+                )
+
+            results = await asyncio.gather(
+                *(task for _, _, task in task_defs), return_exceptions=True
+            )
+
+            data: Dict[str, Any] = {}
+            route_errors: Dict[str, str] = {}
+            success_count = 0
+
+            for (key, optional, _), result in zip(task_defs, results):
+                if isinstance(result, Exception):
+                    route_errors[key] = str(result)
+                    if not optional:
+                        data[key] = {} if key not in SCALAR_ROUTE_KEYS else None
+                    continue
+                data[key] = result
+                if not optional:
+                    success_count += 1
+
+            if success_count == 0:
+                error_msg = "; ".join(route_errors.values()) or "unknown error"
+                self.last_error = error_msg
+                raise UpdateFailed(f"Sunsynk API error: {error_msg}")
+
+            if route_errors:
+                data["route_errors"] = route_errors
+                self.last_error = "; ".join(
+                    f"{route}: {message}" for route, message in route_errors.items()
+                )
+                _LOGGER.warning("Partial Sunsynk update due to route errors: %s", route_errors)
             else:
-                weather_task = None
-
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-
-            data = {
-                "flow": results[0],
-                "pv_input": results[1],
-                "ac_output": results[2],
-                "grid": results[3],
-                "battery": results[4],
-                "load": results[5],
-                "plant_realtime": results[6],
-                "plant_summary": results[7],
-                "message_count": results[8],
-                "inverter_counts": results[9],
-                "generation_use": results[10],
-            }
-
-            if weather_task:
-                weather_result = results[-1]
-                if isinstance(weather_result, Exception):
-                    _LOGGER.warning("Weather fetch failed: %s", weather_result)
-                else:
-                    data["weather"] = weather_result
-
-            for key, value in data.items():
-                if isinstance(value, Exception):
-                    raise value
+                self.last_error = None
 
             self.last_success_at = asyncio.get_event_loop().time()
-            self.last_error = None
             return data  # type: ignore[return-value]
 
         except SunsynkApiError as err:
