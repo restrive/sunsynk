@@ -26,6 +26,7 @@ For each `pvIV` entry:
 - `pv{n}_current` (A) → `ipv`
 - `pv{n}_power` (W) → `ppv`
 - `pv{n}_today_energy` (kWh) → `todayPv`
+- Implemented: `PV Array {n} Power` sensor exposes per-string watts with voltage/current attributes.
 Global fields:
 - `pv_pac` – `data.pac`
 - `pv_etoday` / `pv_etotal`

@@ -1,10 +1,11 @@
-﻿# QA Notes
+# QA Notes
 
 > **Disclaimer:** QA logs are informational only. You assume full responsibility for verifying results and addressing any issues discovered during testing.
 
 ## Completed
 - `pytest` suite (`tests/test_api_client.py`, `tests/test_coordinator.py`) - `2025-11-18 @ 15:02 SAST`, PASS (uses sanitized fixtures in `tests/fixtures` and includes permission-error coverage).
 - `pytest` suite (legacy realtime routing + partial-error coverage) - `2025-11-18 @ 16:20 SAST`, PASS (adds tests ensuring battery/load/grid use `/api/v1/inverter/{category}/{sn}/realtime` and coordinator surfaces `route_errors` when an endpoint fails).
+- `pytest` suite (PV array sensors) - `2025-11-18 @ 17:30 SAST`, PASS (includes new `tests/test_sensor.py` verifying per-string power + attributes).
 - `python -m script.hassfest --integration-path custom_components/sunsynk_sync` - `2025-11-18 @ 15:05 SAST`, PASS (no errors/warnings; libturbojpeg warning expected).
 - Manual API harness run (`api-explore/test_routes.py --delay 0.3`) - confirmed all 48 routes succeed (see `api-explore/last-run-report.json`).
 - Targeted HA-style realtime routes (`python test_routes.py --routes routes.ha_realtime.json --delay 0.3`) - `2025-11-18 @ 15:40 SAST`, **FAIL** (200 OK but payload lacks `data`; responses return `code=2` / `msg="No Permissions"` for `/api/v1/inverter/{sn}/realtime/{battery|load|grid}`; captured in `api-explore/last-run-report-ha-realtime.json`).
