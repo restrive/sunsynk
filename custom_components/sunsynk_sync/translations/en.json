@@ -1,0 +1,37 @@
+{
+  "config": {
+    "title": "Sunsynk Sync",
+    "step": {
+      "user": {
+        "title": "Connect Sunsynk Account",
+        "description": "Enter your Sunsynk portal credentials and plant/inverter identifiers. Credentials are only used to request access tokens.",
+        "data": {
+          "email": "Email",
+          "password": "Password",
+          "plant_id": "Plant ID",
+          "inverter_sn": "Inverter Serial",
+          "lan": "Language (lan)",
+          "poll_interval": "Refresh interval (seconds)",
+          "include_weather": "Create weather sensors",
+          "weather_lon_lat": "Weather coordinates (lat,lon)"
+        }
+      }
+    },
+    "error": {
+      "auth": "Authentication failed. Re-check email/password.",
+      "unknown": "Unexpected error while contacting Sunsynk"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sunsynk Sync options",
+        "data": {
+          "poll_interval": "Refresh interval (seconds)",
+          "include_weather": "Expose weather sensors",
+          "weather_lon_lat": "Weather coordinates (lat,lon)"
+        }
+      }
+    }
+  }
+}
