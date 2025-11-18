@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "msg": "Success",
+  "data": {
+    "loadPower": "1850",
+    "upsLoad": "420",
+    "smartLoad": "110"
+  }
+}

@@ -1,6 +1,6 @@
 {
+  "title": "Sunsynk Sync",
   "config": {
-    "title": "Sunsynk Sync",
     "step": {
       "user": {
         "title": "Connect Sunsynk Account",

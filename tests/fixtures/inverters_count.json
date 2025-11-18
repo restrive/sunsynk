@@ -1,0 +1,10 @@
+{
+  "code": 0,
+  "msg": "Success",
+  "data": {
+    "normal": 1,
+    "warning": 0,
+    "fault": 0,
+    "offline": 0
+  }
+}

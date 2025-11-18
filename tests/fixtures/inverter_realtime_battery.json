@@ -1,0 +1,11 @@
+{
+  "code": 0,
+  "msg": "Success",
+  "data": {
+    "soc": "27.0",
+    "vb": "52.4",
+    "ib": "-6.5",
+    "temp": "24.0",
+    "cycleCount": 124
+  }
+}

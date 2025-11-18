@@ -1,0 +1,20 @@
+{
+  "code": 0,
+  "msg": "Success",
+  "data": {
+    "currWea": {
+      "desc": "mist",
+      "temp": 18.2,
+      "icon": "50d"
+    },
+    "forecast": [
+      {
+        "desc": "mist",
+        "tempHigh": 24.0,
+        "tempLow": 14.0
+      }
+    ],
+    "sunrise": "05:12",
+    "sunset": "18:45"
+  }
+}

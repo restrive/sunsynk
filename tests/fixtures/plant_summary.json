@@ -1,0 +1,11 @@
+{
+  "code": 0,
+  "msg": "Success",
+  "data": {
+    "todayEnergy": 12.6,
+    "monthEnergy": 320.4,
+    "yearEnergy": 4200.1,
+    "totalEnergy": 9124.5,
+    "totalIncome": 1450.22
+  }
+}

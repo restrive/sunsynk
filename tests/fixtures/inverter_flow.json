@@ -1,0 +1,11 @@
+{
+  "code": 0,
+  "msg": "Success",
+  "data": {
+    "pvPower": 0,
+    "loadPower": 1820,
+    "batteryPower": -320,
+    "gridOrMeterPower": 350,
+    "pvEnergyToday": 12.4
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "code": 0,
+  "msg": "Success",
+  "data": {
+    "pv": 12.6,
+    "load": 11.2,
+    "batteryCharge": 4.1,
+    "gridExport": 1.2,
+    "gridImport": 0.8
+  }
+}

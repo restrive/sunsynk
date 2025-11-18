@@ -6,10 +6,20 @@ from collections.abc import Mapping
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.const import Platform
+
+try:
+    from homeassistant.helpers import config_validation as cv
+except ImportError:  # pragma: no cover - fallback when HA not installed in tests
+    class _DummyCV:  # type: ignore[too-many-ancestors]
+        @staticmethod
+        def config_entry_only_config_schema(domain: str):
+            return {}
+
+    cv = _DummyCV()  # type: ignore[assignment]
 
 from .api_client import SunsynkApiClient
 from .const import (
@@ -26,6 +36,7 @@ from .const import (
 from .coordinator import SunsynkCoordinator
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.BUTTON]
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:

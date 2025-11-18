@@ -53,7 +53,7 @@ class FixtureClient(SunsynkApiClient):
 
 
 async def _run_coordinator():
-    fixture_dir = Path("projects/1408 Renovations/projects/smart-home/hacs-plugins/sunsynk/api-explore/.cache")
+    fixture_dir = Path(__file__).resolve().parent / "fixtures"
     client = FixtureClient(fixture_dir)
     coordinator = SunsynkCoordinator(
         hass=None,  # type: ignore[arg-type]
