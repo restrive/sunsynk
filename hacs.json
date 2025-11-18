@@ -1,0 +1,8 @@
+{
+  "name": "Sunsynk Sync",
+  "content_in_root": false,
+  "render_readme": true,
+  "country": ["global"],
+  "domains": ["sensor", "binary_sensor", "button"],
+  "homeassistant": "2023.8.0"
+}
