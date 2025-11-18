@@ -8,12 +8,12 @@
         "data": {
           "email": "Email",
           "password": "Password",
-          "plant_id": "Plant ID",
-          "inverter_sn": "Inverter Serial",
-          "lan": "Language (lan)",
-          "poll_interval": "Refresh interval (seconds)",
+          "plant_id": "Plant ID (example: 221135)",
+          "inverter_sn": "Inverter Serial (example: 2302100572)",
+          "lan": "Language (example: en)",
+          "poll_interval": "Refresh interval in seconds (example: 30)",
           "include_weather": "Create weather sensors",
-          "weather_lon_lat": "Weather coordinates (lat,lon)"
+          "weather_lon_lat": "Weather coordinates (example: -25.98,28.00)"
         }
       }
     },
@@ -27,9 +27,9 @@
       "init": {
         "title": "Sunsynk Sync options",
         "data": {
-          "poll_interval": "Refresh interval (seconds)",
+          "poll_interval": "Refresh interval in seconds (example: 30)",
           "include_weather": "Expose weather sensors",
-          "weather_lon_lat": "Weather coordinates (lat,lon)"
+          "weather_lon_lat": "Weather coordinates (example: -25.98,28.00)"
         }
       }
     }

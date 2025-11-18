@@ -21,16 +21,26 @@ from .const import (
     DOMAIN,
 )
 
+DYNAMIC_HINTS = {
+    CONF_EMAIL: "Email used on the Sunsynk portal",
+    CONF_PASSWORD: "Portal password (stored securely)",
+    CONF_PLANT_ID: "Example format: 221135 (numeric Plant ID from portal URL)",
+    CONF_INVERTER_SN: "Example format: 2302100572 (inverter serial printed on device)",
+    CONF_LAN: "Example: en (language code)",
+    CONF_POLL_INTERVAL: "Refresh interval in seconds (e.g., 30)",
+    CONF_WEATHER_COORDS: "Example format: -25.98,28.00 (lat,lon) or leave blank",
+}
+
 DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_EMAIL): str,
-        vol.Required(CONF_PASSWORD): str,
-        vol.Required(CONF_PLANT_ID): str,
-        vol.Required(CONF_INVERTER_SN): str,
-        vol.Optional(CONF_LAN, default="en"): str,
-        vol.Optional(CONF_POLL_INTERVAL, default=30): vol.All(int, vol.Range(min=10, max=600)),
-        vol.Optional(CONF_INCLUDE_WEATHER, default=False): bool,
-        vol.Optional(CONF_WEATHER_COORDS, default=""): str,
+        vol.Required(CONF_EMAIL, description={"suggested_value": "", "description": DYNAMIC_HINTS[CONF_EMAIL]}): str,
+        vol.Required(CONF_PASSWORD, description={"description": DYNAMIC_HINTS[CONF_PASSWORD]}): str,
+        vol.Required(CONF_PLANT_ID, description={"description": DYNAMIC_HINTS[CONF_PLANT_ID]}): str,
+        vol.Required(CONF_INVERTER_SN, description={"description": DYNAMIC_HINTS[CONF_INVERTER_SN]}): str,
+        vol.Optional(CONF_LAN, default="en", description={"description": DYNAMIC_HINTS[CONF_LAN]}): str,
+        vol.Optional(CONF_POLL_INTERVAL, default=30, description={"description": DYNAMIC_HINTS[CONF_POLL_INTERVAL]}): vol.All(int, vol.Range(min=10, max=600)),
+        vol.Optional(CONF_INCLUDE_WEATHER, default=False, description={"description": "Toggle weather sensors"}): bool,
+        vol.Optional(CONF_WEATHER_COORDS, default="", description={"description": DYNAMIC_HINTS[CONF_WEATHER_COORDS]}): str,
     }
 )
 
@@ -74,9 +84,9 @@ class SunsynkOptionsFlow(config_entries.OptionsFlow):
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_POLL_INTERVAL, default=defaults[CONF_POLL_INTERVAL]): vol.All(int, vol.Range(min=10, max=600)),
+                vol.Required(CONF_POLL_INTERVAL, default=defaults[CONF_POLL_INTERVAL], description={"description": DYNAMIC_HINTS[CONF_POLL_INTERVAL]}): vol.All(int, vol.Range(min=10, max=600)),
                 vol.Required(CONF_INCLUDE_WEATHER, default=defaults[CONF_INCLUDE_WEATHER]): bool,
-                vol.Optional(CONF_WEATHER_COORDS, default=defaults[CONF_WEATHER_COORDS]): str,
+                vol.Optional(CONF_WEATHER_COORDS, default=defaults[CONF_WEATHER_COORDS], description={"description": DYNAMIC_HINTS[CONF_WEATHER_COORDS]}): str,
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)
