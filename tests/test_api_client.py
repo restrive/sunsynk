@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, Tuple
 from urllib.parse import urlsplit
 
+import pytest
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.PublicKey import RSA
 
@@ -13,7 +14,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from custom_components.sunsynk_sync.api_client import SunsynkApiClient  # noqa: E402
+from custom_components.sunsynk_sync.api_client import (  # noqa: E402
+    SunsynkApiClient,
+    SunsynkApiError,
+)
 
 
 class FakeResponse:
@@ -126,3 +130,44 @@ def test_flow_request_performs_authentication(monkeypatch) -> None:
     data = asyncio.run(run())
     assert data["pvPower"] == 1234
     assert ("GET", "/api/v1/inverter/SN123/flow") in session.calls
+
+
+def test_permission_error_contains_context(monkeypatch) -> None:
+    public_b64, _ = _build_public_key()
+    responses = {
+        ("GET", "/anonymous/publicKey"): ResponsePayload(
+            200,
+            {"code": 0, "msg": "Success", "data": public_b64},
+        ),
+        ("POST", "/oauth/token/new"): ResponsePayload(
+            200,
+            {
+                "code": 0,
+                "msg": "Success",
+                "data": {"access_token": "token-value", "expires_in": 60},
+            },
+        ),
+        ("GET", "/api/v1/inverter/SN123/flow"): ResponsePayload(
+            200,
+            {"code": 1001, "msg": "No Permissions", "data": {"reason": "Needs plant role"}},
+        ),
+    }
+    session = FakeSession(responses)
+    client = SunsynkApiClient(
+        session,
+        email="user@example.com",
+        password="secret",
+        plant_id="PID",
+        inverter_sn="SN123",
+    )
+
+    async def run() -> Dict[str, Any]:
+        monkeypatch.setattr(client, "_encrypt_password", lambda _: "encrypted")
+        return await client.async_get_flow()
+
+    with pytest.raises(SunsynkApiError) as err:
+        asyncio.run(run())
+    message = str(err.value)
+    assert "/api/v1/inverter/SN123/flow" in message
+    assert "code=1001" in message
+    assert "Permission failure" in message

@@ -167,18 +167,24 @@ class SunsynkApiClient:
                 f"HTTP {response.status} calling {path}", status=response.status, payload=payload
             )
 
-        if payload.get("code") != 0:
-            _LOGGER.warning(
-                "Sunsynk API returned code %s for %s: %s",
-                payload.get("code"),
-                path,
-                payload.get("msg"),
-            )
-            raise SunsynkApiError(
-                payload.get("msg", "Unknown Sunsynk error"),
-                status=response.status,
-                payload=payload,
-            )
+        api_code = payload.get("code")
+        if api_code != 0:
+            api_msg = payload.get("msg", "Unknown Sunsynk error")
+            detail_hint: Optional[str] = None
+            data_payload = payload.get("data")
+            if isinstance(data_payload, dict):
+                detail_hint = (
+                    data_payload.get("msg")
+                    or data_payload.get("reason")
+                    or data_payload.get("message")
+                )
+            context = f"{api_msg} (endpoint={path}, code={api_code})"
+            if detail_hint:
+                context = f"{context} - {detail_hint}"
+            if "permission" in api_msg.lower():
+                context = f"Permission failure on {method} {path}: {context}"
+            _LOGGER.warning("Sunsynk API error: %s", context)
+            raise SunsynkApiError(context, status=response.status, payload=payload)
         return payload.get("data") or {}
 
     async def _parse_json(self, response) -> dict[str, Any]:
