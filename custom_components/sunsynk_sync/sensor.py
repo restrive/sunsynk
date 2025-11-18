@@ -37,6 +37,11 @@ def _safe(fn: Callable[[dict[str, Any]], Any]) -> Callable[[dict[str, Any]], Any
     return wrapper
 
 
+def _has_inverter_summary(data: dict[str, Any]) -> bool:
+    summary = data.get("inverter_summary")
+    return bool(summary)
+
+
 @dataclass
 class SunsynkSensorDescription(SensorEntityDescription):
     """Description for Sunsynk sensors."""
@@ -84,6 +89,60 @@ SENSOR_DESCRIPTIONS: tuple[SunsynkSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfPower.WATT,
         value_fn=_safe(lambda data: sum(float(pv["ppv"]) for pv in data["pv_input"].get("pvIV", []))),
         available_fn=lambda data: bool(data["pv_input"].get("pvIV")),
+    ),
+    SunsynkSensorDescription(
+        key="inverter_power",
+        name="Inverter Output Power",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        value_fn=_safe(lambda data: float(data["inverter_summary"]["pac"])),
+        available_fn=_has_inverter_summary,
+    ),
+    SunsynkSensorDescription(
+        key="inverter_rate_power",
+        name="Inverter Rated Power",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        value_fn=_safe(lambda data: float(data["inverter_summary"]["ratePower"])),
+        available_fn=_has_inverter_summary,
+    ),
+    SunsynkSensorDescription(
+        key="inverter_energy_today",
+        name="Inverter Energy Today",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        value_fn=_safe(lambda data: float(data["inverter_summary"]["etoday"])),
+        available_fn=_has_inverter_summary,
+    ),
+    SunsynkSensorDescription(
+        key="inverter_energy_month",
+        name="Inverter Energy This Month",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        value_fn=_safe(lambda data: float(data["inverter_summary"]["emonth"])),
+        available_fn=_has_inverter_summary,
+    ),
+    SunsynkSensorDescription(
+        key="inverter_energy_year",
+        name="Inverter Energy This Year",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        value_fn=_safe(lambda data: float(data["inverter_summary"]["eyear"])),
+        available_fn=_has_inverter_summary,
+    ),
+    SunsynkSensorDescription(
+        key="inverter_energy_total",
+        name="Inverter Energy Total",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        value_fn=_safe(lambda data: float(data["inverter_summary"]["etotal"])),
+        available_fn=_has_inverter_summary,
     ),
     SunsynkSensorDescription(
         key="grid_power",
@@ -193,6 +252,7 @@ async def async_setup_entry(
         SunsynkSensor(coordinator, description, entry)
         for description in SENSOR_DESCRIPTIONS
     ]
+    entities.append(SunsynkInverterStatusSensor(coordinator, entry))
     async_add_entities(entities)
 
     known_arrays: set[int] = set()
@@ -314,3 +374,59 @@ class SunsynkPvArraySensor(CoordinatorEntity[SunsynkCoordinator], SensorEntity):
         if not self.coordinator.last_update_success:
             return False
         return self._array_data() is not None
+
+
+class SunsynkInverterStatusSensor(CoordinatorEntity[SunsynkCoordinator], SensorEntity):
+    """Sensor surfacing inverter run status and metadata."""
+
+    _attr_icon = "mdi:information-outline"
+
+    def __init__(self, coordinator: SunsynkCoordinator, entry) -> None:
+        super().__init__(coordinator)
+        self._attr_name = "Inverter Run Status"
+        self._attr_unique_id = f"{entry.entry_id}_inverter_status"
+        plant_id = entry.data.get(CONF_PLANT_ID, "Sunsynk")
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=f"Sunsynk Plant {plant_id}",
+            manufacturer="Sunsynk",
+        )
+
+    def _summary(self) -> dict[str, Any]:
+        data = self.coordinator.data or {}
+        summary = data.get("inverter_summary") or {}
+        return summary
+
+    @property
+    def native_value(self) -> Optional[str]:
+        summary = self._summary()
+        run_status = summary.get("runStatus")
+        return str(run_status) if run_status is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        summary = self._summary()
+        version = summary.get("version") or {}
+        plant = summary.get("plant") or {}
+        attrs: dict[str, Any] = {
+            "status_code": summary.get("status"),
+            "alias": summary.get("alias"),
+            "brand": summary.get("brand"),
+            "model": summary.get("model"),
+            "rated_power": summary.get("ratePower"),
+            "serial_number": summary.get("sn"),
+            "update_at": summary.get("updateAt"),
+            "installer": plant.get("installer"),
+            "installer_email": plant.get("email"),
+            "installer_phone": plant.get("phone"),
+            "firmware_master": version.get("masterVer"),
+            "firmware_soft": version.get("softVer"),
+            "firmware_hmi": version.get("hmiVer"),
+        }
+        return attrs
+
+    @property
+    def available(self) -> bool:
+        if not self.coordinator.last_update_success:
+            return False
+        return bool(self._summary())

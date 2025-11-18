@@ -26,6 +26,7 @@ DEFAULT_POLL_INTERVAL = 30  # seconds
 
 FLOW_ENDPOINT = "/api/v1/inverter/{sn}/flow"
 REALTIME_ENDPOINT = "/api/v1/inverter/{sn}/realtime/{category}"
+INVERTER_SUMMARY_ENDPOINT = "/api/v1/inverter/{sn}"
 PLANT_REALTIME_ENDPOINT = "/api/v1/plant/{plant_id}/realtime"
 PLANT_SUMMARY_ENDPOINT = "/api/v1/plant/{plant_id}"
 WEATHER_ENDPOINT = "/api/v1/weather"

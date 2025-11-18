@@ -25,6 +25,7 @@ from .const import (
     FLOW_ENDPOINT,
     GEN_USE_ENDPOINT,
     INVERTER_COUNT_ENDPOINT,
+    INVERTER_SUMMARY_ENDPOINT,
     MESSAGE_COUNT_ENDPOINT,
     PLANT_REALTIME_ENDPOINT,
     PLANT_SUMMARY_ENDPOINT,
@@ -141,6 +142,11 @@ class SunsynkApiClient:
     async def async_get_generation_use(self) -> dict[str, Any]:
         path = GEN_USE_ENDPOINT.format(plant_id=self._plant_id)
         return await self._authenticated_get(path)
+
+    async def async_get_inverter_summary(self) -> dict[str, Any]:
+        params = {"lan": self._lan, "sn": self._inverter_sn}
+        path = INVERTER_SUMMARY_ENDPOINT.format(sn=self._inverter_sn)
+        return await self._authenticated_get(path, params=params)
 
     # -------------------------------------------------------------------------
     # Core HTTP helpers

@@ -17,6 +17,7 @@
 - `inverter_pac` – Output power (W)
 - `inverter_rate_power` – Rated capacity (W)
 - `inverter_energy_today/month/year/total` – Inverter-side energy counters (kWh)
+- Implemented: `Inverter Output Power`, `Inverter Rated Power`, `Inverter Energy Today/Month/Year/Total`, and `Inverter Run Status` (with firmware/installer attributes).
 - `inverter_brand`, `model`, `alias` – Attributes
 - `firmware_versions` – Attributes from `version.*` (master/soft/hmi/etc.)
 

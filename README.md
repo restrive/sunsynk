@@ -41,6 +41,10 @@
 - Each sensor reports instantaneous power (W) and includes voltage/current attributes, giving immediate visibility into misbehaving arrays.
 - Sensors are discovered dynamically after each coordinator refresh, so wiring up a new string in Sunsynk automatically surfaces a matching entity without reloading the integration.
 
+## Inverter Summary Sensors
+- `/api/v1/inverter/{sn}` powers sensors for inverter PAC, rated power, and energy counters (today/month/year/total).
+- The `Inverter Run Status` sensor surfaces Sunsynk's `runStatus` plus attributes (alias, installer contact, firmware versions, status code).
+- Coordinator fetches this payload each cycle and marks sensors unavailable if Sunsynk omits the summary.
 
 ## Security Notes
 - Never commit real credentials or plant metadata.

@@ -60,6 +60,7 @@ class SunsynkCoordinator(DataUpdateCoordinator):  # type: ignore[misc]
         try:
             _LOGGER.debug("Refreshing Sunsynk data (weather=%s)", self._include_weather)
             task_defs: list[Tuple[str, bool, Any]] = [
+                ("inverter_summary", False, self._client.async_get_inverter_summary()),
                 ("flow", False, self._client.async_get_flow()),
                 ("pv_input", False, self._client.async_get_inverter_realtime("input")),
                 ("ac_output", False, self._client.async_get_inverter_realtime("output")),
