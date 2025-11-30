@@ -80,6 +80,26 @@ def _summary_payload():
     }
 
 
+def _grid_payload():
+    return {
+        "grid": {
+            "vip": [{"volt": "226.5", "current": "3.4", "power": 0}],
+            "pac": 0,
+            "qac": 0,
+            "fac": 50.15,
+            "pf": 1.0,
+            "status": 0,
+            "acRealyStatus": 1,
+            "etodayFrom": "9.5",
+            "etodayTo": "0.0",
+            "etotalFrom": "16583.6",
+            "etotalTo": "14.7",
+            "limiterPowerArr": [0, 0],
+            "limiterTotalPower": 0,
+        }
+    }
+
+
 def _get_description(key: str):
     return next(desc for desc in SENSOR_DESCRIPTIONS if desc.key == key)
 
@@ -106,3 +126,26 @@ def test_inverter_status_sensor_exposes_attributes():
     assert attrs["status_code"] == 1
     assert attrs["installer"] == "Set-the-bar Installers"
     assert sensor.available is True
+
+
+def test_grid_sensors_surface_realtime_metrics():
+    coordinator = _build_coordinator(_grid_payload())
+    entry = _entry()
+
+    voltage_sensor = SunsynkSensor(coordinator, _get_description("grid_voltage_l1"), entry)
+    current_sensor = SunsynkSensor(coordinator, _get_description("grid_current_l1"), entry)
+    power_sensor = SunsynkSensor(coordinator, _get_description("grid_power"), entry)
+
+    assert voltage_sensor.native_value == 226.5
+    assert current_sensor.native_value == 3.4
+    assert power_sensor.native_value == 0.0
+    assert voltage_sensor.available is True
+
+    pf_sensor = SunsynkSensor(coordinator, _get_description("grid_power_factor"), entry)
+    freq_sensor = SunsynkSensor(coordinator, _get_description("grid_frequency"), entry)
+    limiter_sensor = SunsynkSensor(coordinator, _get_description("grid_limiter_power_l2"), entry)
+
+    assert pf_sensor.native_value == 1.0
+    assert freq_sensor.native_value == 50.15
+    assert limiter_sensor.native_value == 0.0
+    assert limiter_sensor.available is True

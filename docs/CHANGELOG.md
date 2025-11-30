@@ -2,6 +2,11 @@
 
 > **Disclaimer:** Release notes describe changes without implying warranties. Validate every build in your environment before production use.
 
+## 0.1.2 (2025-11-30)
+- Added full grid realtime coverage: VIP voltage/current/power, pac/qac, frequency, power factor, status/relay, energy counters (to/from), and limiter totals/channels.
+- Updated fixtures + sensor/coordinator tests to lock grid payload parsing and limiter array handling.
+- Documented implemented grid metrics in SENSOR_MAP and bumped manifest to 0.1.2.
+
 ## 0.1.1 (2025-11-30)
 - **Fixed:** Authentication failure with Sunsynk API (`Internal Server Error` on `/oauth/token/new`).
 - Updated token request to include required `sign` and `nonce` parameters per Sunsynk's updated API spec.

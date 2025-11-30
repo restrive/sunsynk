@@ -76,6 +76,8 @@ def test_coordinator_collects_all_payloads():
     assert data["pv_input"]["pvIV"][0]["vpv"] == "207.7"
     assert data["battery"]["soc"] == "27.0"
     assert data["plant_realtime"]["pac"] == 1400
+    assert data["grid"]["vip"][0]["volt"] == "226.0"
+    assert data["grid"]["limiterTotalPower"] == 0
     assert data["weather"]["currWea"]["desc"] == "mist"
 
 

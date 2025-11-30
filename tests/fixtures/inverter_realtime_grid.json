@@ -2,9 +2,27 @@
   "code": 0,
   "msg": "Success",
   "data": {
-    "pgImport": "350",
-    "vg": "230.2",
-    "ig": "1.5",
-    "pf": "0.98"
+    "vip": [
+      {
+        "volt": "226.0",
+        "current": "2.4",
+        "power": 20
+      }
+    ],
+    "pac": 20,
+    "qac": 0,
+    "fac": 49.96,
+    "pf": 1.0,
+    "status": 1,
+    "acRealyStatus": 1,
+    "etodayFrom": "15.7",
+    "etodayTo": "0.0",
+    "etotalFrom": "16290.4",
+    "etotalTo": "14.5",
+    "limiterPowerArr": [
+      0,
+      0
+    ],
+    "limiterTotalPower": 0
   }
 }

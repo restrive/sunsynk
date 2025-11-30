@@ -49,6 +49,7 @@ Global fields:
 - `grid_energy_from_today/total` (kWh) → `etodayFrom`, `etotalFrom`
 - `grid_energy_to_today/total` (kWh) → `etodayTo`, `etotalTo`
 - `grid_limiter_power_total` + `limiterPowerArr[]`
+- Implemented: `pac`, `qac`, `pf`, `fac`, `status`, `acRealyStatus`, `etodayFrom/To`, `etotalFrom/To`, `limiterTotalPower`, `limiterPowerArr`, and `vip[0]` voltage/current/power sensors.
 
 ## Battery Telemetry (`/api/v1/inverter/battery/{sn}/realtime`)
 - `battery_power` (W) – positive = charging, negative = discharging

@@ -15,7 +15,6 @@ from homeassistant.const import (
     UnitOfEnergy,
     UnitOfPower,
     UnitOfTemperature,
-    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
@@ -37,9 +36,60 @@ def _safe(fn: Callable[[dict[str, Any]], Any]) -> Callable[[dict[str, Any]], Any
     return wrapper
 
 
+def _to_float(value: Any) -> Optional[float]:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _to_int(value: Any) -> Optional[int]:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _has_inverter_summary(data: dict[str, Any]) -> bool:
     summary = data.get("inverter_summary")
     return bool(summary)
+
+
+def _has_grid(data: dict[str, Any]) -> bool:
+    return bool(data.get("grid"))
+
+
+def _vip_available(index: int) -> Callable[[dict[str, Any]], bool]:
+    def checker(data: dict[str, Any]) -> bool:
+        vip_rows = data.get("grid", {}).get("vip") or []
+        return index < len(vip_rows)
+
+    return checker
+
+
+def _vip_value(index: int, field: str) -> Callable[[dict[str, Any]], Optional[float]]:
+    def getter(data: dict[str, Any]) -> Optional[float]:
+        vip_rows = data["grid"]["vip"]
+        value = vip_rows[index].get(field)
+        return _to_float(value)
+
+    return _safe(getter)
+
+
+def _limiter_value(index: int) -> Callable[[dict[str, Any]], Optional[float]]:
+    def getter(data: dict[str, Any]) -> Optional[float]:
+        arr = data["grid"]["limiterPowerArr"]
+        return _to_float(arr[index])
+
+    return _safe(getter)
+
+
+def _limiter_available(index: int) -> Callable[[dict[str, Any]], bool]:
+    def checker(data: dict[str, Any]) -> bool:
+        arr = data.get("grid", {}).get("limiterPowerArr") or []
+        return index < len(arr)
+
+    return checker
 
 
 @dataclass
@@ -145,12 +195,56 @@ SENSOR_DESCRIPTIONS: tuple[SunsynkSensorDescription, ...] = (
         available_fn=_has_inverter_summary,
     ),
     SunsynkSensorDescription(
+        key="grid_voltage_l1",
+        name="Grid Voltage L1",
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="V",
+        value_fn=_vip_value(0, "volt"),
+        available_fn=_vip_available(0),
+    ),
+    SunsynkSensorDescription(
+        key="grid_current_l1",
+        name="Grid Current L1",
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="A",
+        value_fn=_vip_value(0, "current"),
+        available_fn=_vip_available(0),
+    ),
+    SunsynkSensorDescription(
+        key="grid_power_l1",
+        name="Grid Power L1",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        value_fn=_vip_value(0, "power"),
+        available_fn=_vip_available(0),
+    ),
+    SunsynkSensorDescription(
         key="grid_power",
         name="Grid Power",
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.WATT,
-        value_fn=_safe(lambda data: data["grid"]["pac"]),
+        value_fn=_safe(lambda data: _to_float(data["grid"]["pac"])),
+        available_fn=_has_grid,
+    ),
+    SunsynkSensorDescription(
+        key="grid_reactive_power",
+        name="Grid Reactive Power",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="var",
+        value_fn=_safe(lambda data: _to_float(data["grid"]["qac"])),
+        available_fn=_has_grid,
+    ),
+    SunsynkSensorDescription(
+        key="grid_power_factor",
+        name="Grid Power Factor",
+        device_class=SensorDeviceClass.POWER_FACTOR,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=_safe(lambda data: _to_float(data["grid"]["pf"])),
+        available_fn=_has_grid,
     ),
     SunsynkSensorDescription(
         key="grid_frequency",
@@ -158,7 +252,83 @@ SENSOR_DESCRIPTIONS: tuple[SunsynkSensorDescription, ...] = (
         device_class=SensorDeviceClass.FREQUENCY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement="Hz",
-        value_fn=_safe(lambda data: data["grid"]["fac"]),
+        value_fn=_safe(lambda data: _to_float(data["grid"]["fac"])),
+        available_fn=_has_grid,
+    ),
+    SunsynkSensorDescription(
+        key="grid_status",
+        name="Grid Status",
+        value_fn=_safe(lambda data: _to_int(data["grid"]["status"])),
+        available_fn=_has_grid,
+    ),
+    SunsynkSensorDescription(
+        key="grid_relay_status",
+        name="Grid Relay Status",
+        value_fn=_safe(lambda data: _to_int(data["grid"]["acRealyStatus"])),
+        available_fn=_has_grid,
+    ),
+    SunsynkSensorDescription(
+        key="grid_energy_from_today",
+        name="Grid Energy From Today",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        value_fn=_safe(lambda data: _to_float(data["grid"]["etodayFrom"])),
+        available_fn=_has_grid,
+    ),
+    SunsynkSensorDescription(
+        key="grid_energy_from_total",
+        name="Grid Energy From Total",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        value_fn=_safe(lambda data: _to_float(data["grid"]["etotalFrom"])),
+        available_fn=_has_grid,
+    ),
+    SunsynkSensorDescription(
+        key="grid_energy_to_today",
+        name="Grid Energy To Today",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        value_fn=_safe(lambda data: _to_float(data["grid"]["etodayTo"])),
+        available_fn=_has_grid,
+    ),
+    SunsynkSensorDescription(
+        key="grid_energy_to_total",
+        name="Grid Energy To Total",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        value_fn=_safe(lambda data: _to_float(data["grid"]["etotalTo"])),
+        available_fn=_has_grid,
+    ),
+    SunsynkSensorDescription(
+        key="grid_limiter_power_total",
+        name="Grid Limiter Power Total",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        value_fn=_safe(lambda data: _to_float(data["grid"]["limiterTotalPower"])),
+        available_fn=_has_grid,
+    ),
+    SunsynkSensorDescription(
+        key="grid_limiter_power_l1",
+        name="Grid Limiter Power L1",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        value_fn=_limiter_value(0),
+        available_fn=_limiter_available(0),
+    ),
+    SunsynkSensorDescription(
+        key="grid_limiter_power_l2",
+        name="Grid Limiter Power L2",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        value_fn=_limiter_value(1),
+        available_fn=_limiter_available(1),
     ),
     SunsynkSensorDescription(
         key="battery_soc",
