@@ -240,7 +240,14 @@ class SunsynkApiClient:
         )
         public_key = await self._fetch_public_key()
         encrypted_password = self._encrypt_password(public_key)
+        # Generate new nonce and sign for the token request
+        # Token sign uses first 10 chars of public key as salt (not POWER_VIEW)
+        nonce = int(time.time() * 1000)
+        sign_str = f"nonce={nonce}&source={self._source}{public_key[:10]}"
+        sign = hashlib.md5(sign_str.encode("utf-8")).hexdigest()
         payload = {
+            "sign": sign,
+            "nonce": nonce,
             "username": self._email,
             "password": encrypted_password,
             "grant_type": "password",
